@@ -1,0 +1,293 @@
+class Main {
+  public static void main(String[] args) {
+    int test_num = 0;
+
+    CodeFinder finder = new CodeFinder("hello world hello");
+    
+    System.out.println("~~~~~~~~~~~ TEST "+(++test_num)+" ~~~~~~~~~~~");
+    evaluateStudentAnswer(finder.showSimilarity("hello"),
+        " hello world hello\n"
+      + "h*|||||||||||*||||\n"
+      + "e|*|||||||||||*|||\n"
+      + "l||**|||||*||||**|\n"
+      + "l||**|||||*||||**|\n"
+      + "o||||*||*||||||||*");
+
+    System.out.println("~~~~~~~~~~~ TEST "+(++test_num)+" ~~~~~~~~~~~");
+    evaluateStudentAnswer(finder.getPassword("hello"), "hello");
+
+    finder.setCode("almos-almost");
+    System.out.println("~~~~~~~~~~~ TEST "+(++test_num)+" ~~~~~~~~~~~");
+    evaluateStudentAnswer(finder.getPassword("almost"), "almost");
+
+    System.out.println("~~~~~~~~~~~ TEST "+(++test_num)+" ~~~~~~~~~~~");
+    evaluateStudentAnswer(finder.showPassword("almost"),
+    " almos-almost\n"
+    + "a*|||||8|||||\n"
+    + "l|*|||||8||||\n"
+    + "m||*|||||8|||\n"
+    + "o|||*|||||8||\n"
+    + "s||||*|||||8|\n"
+    + "t|||||||||||8");
+
+    System.out.println("~~~~~~~~~~~ TEST "+(++test_num)+" ~~~~~~~~~~~");
+    // NOTE: recall if we cannot find the string, default to showSimilarity.
+    evaluateStudentAnswer(finder.showPassword("almosa"),
+    " almos-almost\n"
+    + "a*|||||*|||||\n"
+    + "l|*|||||*||||\n"
+    + "m||*|||||*|||\n"
+    + "o|||*|||||*||\n"
+    + "s||||*|||||*|\n"
+    + "a*|||||*|||||");
+
+
+    finder.setCode("hello world helloo");
+    System.out.println("~~~~~~~~~~~ TEST "+(++test_num)+" ~~~~~~~~~~~");
+    evaluateStudentAnswer(finder.showPassword("helloo"),
+    " hello world helloo\n"
+    + "h*|||||||||||8|||||\n"
+    + "e|*|||||||||||8||||\n"
+    + "l||**|||||*||||8*||\n"
+    + "l||**|||||*||||*8||\n"
+    + "o||||*||*||||||||8*\n"
+    + "o||||*||*||||||||*8");
+
+  }
+
+ public static void evaluateStudentAnswer(String studentAnswer,
+    String trueAnswer){
+      if(studentAnswer == null || trueAnswer == null){
+        System.out.println("Nulls are not accepted as answers");
+      }
+      if(studentAnswer.equals(trueAnswer)){
+        System.out.println("Correct!");
+      }else{
+        System.out.println("Incorrect!");
+        System.out.println("Your answer");
+        System.out.println(studentAnswer);
+        System.out.println("Correct answer");
+        System.out.println(trueAnswer);
+        String[] trueAnswerSplit = trueAnswer.split("\n");
+        String[] studentAnswerSplit = studentAnswer.split("\n");
+        int to_iter = Math.min(studentAnswerSplit.length, trueAnswerSplit.length);
+        for(int i = 0; i < to_iter; i++){
+          PrintDifferences(i, studentAnswerSplit[i], trueAnswerSplit[i]);
+        }
+        int diff = studentAnswerSplit.length - trueAnswerSplit.length;
+        if(diff > 0){
+          System.out.println("You have " +diff+ " too many lines");
+        }else if (diff < 0){
+          System.out.println("You have " +(-1 * diff)+ " too few lines");
+        }
+        if(studentAnswer.endsWith("\n")){
+          System.out.println("Your answer cannot end with '\\n' character");
+        }
+      }
+  }
+  
+  public static void PrintDifferences(int lineNum, String one, String two){
+
+    // Implements the Levenshtein distance 
+    int[][] dist = new int[one.length()][two.length()];
+    for(int i = 0; i < one.length(); i++){
+      if(two.length() > 0) dist[i][0] = i;
+    }
+    for(int j = 0; j < two.length(); j++){
+      if(one.length() > 0) dist[0][j] = j;
+    }
+
+    for(int j = 1; j < two.length(); j++){
+      for(int i = 1; i < one.length(); i++){
+          int cost = 0;
+          if(one.charAt(i) != two.charAt(j)){
+            cost += 1;
+          }
+          dist[i][j] = Math.min(Math.min(dist[i-1][j] + 1, dist[i][j-1] + 1),
+            dist[i-1][j-1] + cost);
+      }
+    }
+
+    // Walk the distance matrix to give feedback on string deltas.
+    int j = two.length()-1;
+    int i = one.length()-1;
+    while(true){
+      if(i-1 < 0 || j-1 < 0){
+        // base case for stopping iteration
+        break;
+      }
+      int which =  Math.min(Math.min(dist[i-1][j], dist[i][j-1]), dist[i-1][j-1]);
+      String char_one = String.valueOf(one.charAt(i));
+      String char_two = String.valueOf(two.charAt(j));
+      if(char_one.equals("\n")){
+        char_one = "\\n";
+      }
+      if(char_two.equals("\n")){
+        char_two = "\\n";
+      }
+      if(which == dist[i-1][j-1]){
+        if(dist[i-1][j-1] != dist[i][j]){
+          System.out.println("On Line Number " + (lineNum+1) + ", You Inserted "+ char_one + " at character number "+(i+1) + " Instead of char " + char_two);
+        }
+        i--;
+        j--;
+      }else if(which == dist[i-1][j]){
+        System.out.println("On Line Number " + (lineNum+1) + ", You Inserted "+ char_one + " at character number "+(i+1));
+        i--;
+      }else if(which == dist[i][j-1]){
+        System.out.println("On Line Number " + (lineNum+1) +", You do not have "+ char_one + " at character number "+(i+1));
+        j--;
+      }
+    }
+  }
+
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CodeFinder
+
+// Copyright 2019-2020 <Ahmed Ibreljic> All Rights Reserved
+public class CodeFinder{
+
+  String exampleCode; 
+  // --> These constructors were straightforward setting the variables within the parameters equal to other variables. 
+
+public CodeFinder(String code){
+ 
+exampleCode = code;
+ }
+
+public void setCode(String newCode){
+
+exampleCode = newCode;
+ }
+
+// Variables were declared within these Constructors to fulfill them
+public String getPassword(String password){
+  // 1 int, 1 for, 2 returns (DONE)
+//The declared passLeng is very useful allowing the allocated characters to be displayed in values 
+int passLeng = password.length();
+
+for(int codeCountMethod = 0; codeCountMethod < exampleCode.length(); codeCountMethod++){
+
+String exampleCodeSpliced = exampleCode.substring(codeCountMethod, codeCountMethod + passLeng);
+// Allows a password "match", indicating if the password's length is prescribed
+if(exampleCodeSpliced.equals(password)){
+
+return password;
+}
+}
+return "Empty Space"; //Empty Place was attributed as a blank threw my off numerously 
+}
+
+public String getPasswordWithGap(String password, int gap){
+// Nothing (DONE)
+return "";
+}  
+// No constructor, however it does allow for case 12 and 13 
+public String showSimilarity(String password){
+  // two for, 1 if, identify the block char (DONE)
+//Nothing within quotes to subsidize cases
+String Under = "";
+
+for(int X = 0; X < password.length(); X++){
+// Alows for the total number of characters to be calculated, remember the Stack overflow diagram!
+char specificLength = password.charAt(X);
+
+String subFind = Character.toString(specificLength);
+// Got help to write this part of the constructor from Kaufman, I was pretty stuck here
+Under = Under + "\n";
+
+Under = Under + subFind;
+
+for(int subPass = 0; subPass < exampleCode.length(); subPass++){
+//Demonstrates the substring value of password
+char pointCh = exampleCode.charAt(subPass);
+
+String chara = Character.toString(pointCh);
+
+if(chara.equals(subFind)){
+
+Under = Under + "*";
+// These points dictate that the parts either include an * or a | 
+  }else{
+
+Under = Under + "|";
+}
+}
+}
+// Following return methods help with if one is successfull with specificed or not
+return " " + exampleCode + Under;
+ }
+public String showPassword(String password){
+  //2 int, 2 for, 5 if (DONE)
+
+boolean Ast = false;
+
+int lengthOfPassword = password.length();
+
+int valuedInde = 0;
+// Pretty self explanatory, they allow for case 4 to work specifically
+String primaryExampleCode = exampleCode.substring(0,password.length());
+
+String secondaryExampleCode = exampleCode.substring(6,12);
+// These strings take the subtring of the password and see if the password length matches it. Seeked help from William's resource stack overflow. 
+String Compounded = "";
+
+String matchedFromPass = "";
+// These codes match where the added letters onto the string concenated match that of the password 
+for(int X = 0; X < password.length(); X++){
+
+char specificLength = password.charAt(X);
+// Asked William for help, he recommended this to me and 2 other students to rewrite the showPassword with these following conditions:
+String subFind = Character.toString(specificLength);
+
+Compounded = Compounded + "\n";
+
+Compounded = Compounded + subFind;
+
+for(int subPass = 0; subPass < exampleCode.length(); subPass++){
+  //Originally completed in Intelli
+char pointCh = exampleCode.charAt(subPass);
+
+String chara = Character.toString(pointCh);
+ 
+if(chara.equals(subFind) && Ast == false && valuedInde == subPass && matchedFromPass.equals(password)) {
+// if the characters are repeated, the variables set whether a | or * is included which indicated differently, else if about 8 is after this. 
+Compounded = Compounded + "|";
+// The cases being where if the following characters within the string password is not there, characters replace them according to the matrices table demonstrated with the Unit 4 google doc. 
+// Case for if its false
+Ast = true;
+}
+else if(chara.equals(subFind) && Ast == false && valuedInde != subPass)
+{
+Compounded = Compounded + "8";
+}
+else if(chara.equals(subFind) && Ast == false && valuedInde == subPass && !matchedFromPass.equals(password)){
+  // With the help of Nick and William, they showed us that these else if statements used De Morgan's laws to prove that if the following characters are not matched with the specificity of the password, then allocated characters are replaced instead
+Compounded = Compounded + "*";
+// tests where password character appears, then * appears otherwise 8 is written according to if it passes De Morgan's laws
+// Case for if its true 
+Ast = true;
+}
+else if(chara.equals(subFind) && Ast == true && !matchedFromPass.equals(password)) {
+
+Compounded = Compounded + "8";
+}
+//last instance where the | must be utilized
+else
+{
+Compounded = Compounded + "|";
+}
+}
+// Returns with any of the above characters if else
+valuedInde = valuedInde + 1;
+
+Ast = false;
+}
+return " " + exampleCode + Compounded;
+ }
+ public String showPasswordWithGap(String password, int gap){
+
+ return " ";
